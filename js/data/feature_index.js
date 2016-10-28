@@ -117,6 +117,8 @@ class FeatureIndex {
                 styleLayerDistance = translateDistance(paint['fill-translate']);
             } else if (styleLayer.type === 'circle') {
                 styleLayerDistance = paint['circle-radius'] + translateDistance(paint['circle-translate']);
+            } else if (styleLayer.type === 'shape') {
+                styleLayerDistance = paint['shape-radius'] + translateDistance(paint['shape-translate']);
             }
             additionalRadius = Math.max(additionalRadius, styleLayerDistance * pixelsToTileUnits);
         }
@@ -215,6 +217,12 @@ class FeatureIndex {
                                 bearing, pixelsToTileUnits);
                         const circleRadius = paint['circle-radius'] * pixelsToTileUnits;
                         if (!multiPolygonIntersectsBufferedMultiPoint(translatedPolygon, geometry, circleRadius)) continue;
+                    } else if (styleLayer.type === 'shape') {
+                        translatedPolygon = translate(queryGeometry,
+                                paint['shape-translate'], paint['shape-translate-anchor'],
+                                bearing, pixelsToTileUnits);
+                        const shapeRadius = paint['shape-radius'] * pixelsToTileUnits;
+                        if (!multiPolygonIntersectsBufferedMultiPoint(translatedPolygon, geometry, shapeRadius)) continue;
                     }
                 }
 

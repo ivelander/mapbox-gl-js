@@ -21,7 +21,8 @@ const draw = {
     extrusion: require('./draw_extrusion'),
     raster: require('./draw_raster'),
     background: require('./draw_background'),
-    debug: require('./draw_debug')
+    debug: require('./draw_debug'),
+		shape: require('./draw_shape')
 };
 
 /**
