@@ -23,8 +23,9 @@ function drawShapes(painter, sourceCache, layer, coords) {
         const bucket = tile.getBucket(layer);
         if (!bucket) continue;
 
-        const buffers = bucket.bufferGroups.shape;
-        const programConfiguration = bucket.programConfigurations.shape[layer.id];
+        const buffers = bucket.buffers;
+        const layerData = buffers.layerData[layer.id];
+        const programConfiguration = layerData.programConfiguration;
         const program = painter.useProgram('shape', programConfiguration);
         programConfiguration.setUniforms(gl, program, layer, {zoom: painter.transform.zoom});
 
@@ -48,7 +49,7 @@ function drawShapes(painter, sourceCache, layer, coords) {
         ));
 
         for (const segment of buffers.segments) {
-            segment.vaos[layer.id].bind(gl, program, buffers.layoutVertexBuffer, buffers.elementBuffer, buffers.paintVertexBuffers[layer.id], segment.vertexOffset);
+            segment.vaos[layer.id].bind(gl, program, buffers.layoutVertexBuffer, buffers.elementBuffer, layerData.paintVertexBuffer, segment.vertexOffset);
             gl.drawElements(gl.TRIANGLES, segment.primitiveLength * 3, gl.UNSIGNED_SHORT, segment.primitiveOffset * 3 * 2);
         }
     }

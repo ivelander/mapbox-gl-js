@@ -7,65 +7,63 @@ const loadGeometry = require('../load_geometry');
 const EXTENT = require('../extent');
 
 const shapeInterfaces = {
-    shape: {
-        layoutVertexArrayType: new VertexArrayType([{
-            name: 'a_pos',
-            components: 2,
-            type: 'Int16'
-        }]),
-        elementArrayType: new ElementArrayType(),
+    layoutVertexArrayType: new VertexArrayType([{
+        name: 'a_pos',
+        components: 2,
+        type: 'Int16'
+    }]),
+    elementArrayType: new ElementArrayType(),
 
-        paintAttributes: [{
-            name: 'a_color',
-            components: 4,
-            type: 'Uint8',
-            getValue: (layer, globalProperties, featureProperties) => {
-                return layer.getPaintValue("shape-color", globalProperties, featureProperties);
-            },
-            multiplier: 255,
-            paintProperty: 'shape-color'
-        }, {
-            name: 'a_radius',
-            components: 1,
-            type: 'Uint16',
-            isLayerConstant: false,
-            getValue: (layer, globalProperties, featureProperties) => {
-                return [layer.getPaintValue("shape-radius", globalProperties, featureProperties)];
-            },
-            multiplier: 10,
-            paintProperty: 'shape-radius'
-        }, {
-            name: 'a_blur',
-            components: 1,
-            type: 'Uint16',
-            isLayerConstant: false,
-            getValue: (layer, globalProperties, featureProperties) => {
-                return [layer.getPaintValue("shape-blur", globalProperties, featureProperties)];
-            },
-            multiplier: 10,
-            paintProperty: 'shape-blur'
-        }, {
-            name: 'a_opacity',
-            components: 1,
-            type: 'Uint16',
-            isLayerConstant: false,
-            getValue: (layer, globalProperties, featureProperties) => {
-                return [layer.getPaintValue("shape-opacity", globalProperties, featureProperties)];
-            },
-            multiplier: 255,
-            paintProperty: 'shape-opacity'
-        }, {
-            name: 'a_type',
-            components: 1,
-            type: 'Uint16',
-            isLayerConstant: false,
-            getValue: (layer, globalProperties, featureProperties) => {
-                return [layer.getPaintValue("shape-type", globalProperties, featureProperties)];
-            },
-            multiplier: 10,
-            paintProperty: 'shape-type'
-        }]
-    }
+    paintAttributes: [{
+        name: 'a_color',
+        components: 4,
+        type: 'Uint8',
+        getValue: (layer, globalProperties, featureProperties) => {
+            return layer.getPaintValue("shape-color", globalProperties, featureProperties);
+        },
+        multiplier: 255,
+        paintProperty: 'shape-color'
+    }, {
+        name: 'a_radius',
+        components: 1,
+        type: 'Uint16',
+        isLayerConstant: false,
+        getValue: (layer, globalProperties, featureProperties) => {
+            return [layer.getPaintValue("shape-radius", globalProperties, featureProperties)];
+        },
+        multiplier: 10,
+        paintProperty: 'shape-radius'
+    }, {
+        name: 'a_blur',
+        components: 1,
+        type: 'Uint16',
+        isLayerConstant: false,
+        getValue: (layer, globalProperties, featureProperties) => {
+            return [layer.getPaintValue("shape-blur", globalProperties, featureProperties)];
+        },
+        multiplier: 10,
+        paintProperty: 'shape-blur'
+    }, {
+        name: 'a_opacity',
+        components: 1,
+        type: 'Uint16',
+        isLayerConstant: false,
+        getValue: (layer, globalProperties, featureProperties) => {
+            return [layer.getPaintValue("shape-opacity", globalProperties, featureProperties)];
+        },
+        multiplier: 255,
+        paintProperty: 'shape-opacity'
+    }, {
+        name: 'a_type',
+        components: 1,
+        type: 'Uint16',
+        isLayerConstant: false,
+        getValue: (layer, globalProperties, featureProperties) => {
+            return [layer.getPaintValue("shape-type", globalProperties, featureProperties)];
+        },
+        multiplier: 10,
+        paintProperty: 'shape-type'
+    }]
 };
 
 function addShapeVertex(layoutVertexArray, x, y, extrudeX, extrudeY) {
@@ -83,16 +81,12 @@ function addShapeVertex(layoutVertexArray, x, y, extrudeX, extrudeY) {
  */
 class ShapeBucket extends Bucket {
     constructor(options) {
-        super(options);
+        super(options, shapeInterfaces);
         this.layer = this.layers[0];
     }
 
-    get programInterfaces() {
-        return shapeInterfaces;
-    }
-
     addFeature(feature) {
-        const arrays = this.arrays.shape;
+        const arrays = this.arrays;
         const shapeType = this.layer.getPaintValue("shape-type", null, feature.properties);
 
         for (const ring of loadGeometry(feature)) {
@@ -128,7 +122,7 @@ class ShapeBucket extends Bucket {
             }
         }
 
-        arrays.populatePaintArrays(this.layers, {zoom: this.zoom}, feature.properties);
+        arrays.populatePaintArrays(feature.properties);
     }
 }
 
