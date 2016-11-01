@@ -4,6 +4,7 @@ const Bucket = require('../bucket');
 const VertexArrayType = require('../vertex_array_type');
 const ElementArrayType = require('../element_array_type');
 const loadGeometry = require('../load_geometry');
+const resolveTokens = require('../../util/token');
 const EXTENT = require('../extent');
 
 const shapeInterfaces = {
@@ -85,9 +86,20 @@ class ShapeBucket extends Bucket {
         this.layer = this.layers[0];
     }
 
+    populate(features, options) {
+        this.icons = Object.keys(options.iconDependencies);
+        super.populate(features, options);
+    }
+
     addFeature(feature) {
         const arrays = this.arrays;
-        const shapeType = this.layer.getPaintValue("shape-type", null, feature.properties);
+        const iconImageField = this.layer.layout['shape-image'];
+
+        let icon;
+        if (iconImageField) {
+            icon = resolveTokens(feature.properties, iconImageField);
+            console.log(icon);
+        }
 
         for (const ring of loadGeometry(feature)) {
             for (const point of ring) {
