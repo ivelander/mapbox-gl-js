@@ -1,7 +1,5 @@
 'use strict';
 
-const browser = require('../util/browser');
-
 module.exports = drawShapes;
 
 function drawShapes(painter, sourceCache, layer, coords) {
@@ -12,8 +10,6 @@ function drawShapes(painter, sourceCache, layer, coords) {
     painter.setDepthSublayer(0);
     painter.depthMask(false);
 
-    // Allow shapes to be drawn across boundaries, so that
-    // large shapes are not clipped to tiles
     gl.disable(gl.STENCIL_TEST);
 
     for (let i = 0; i < coords.length; i++) {
@@ -29,17 +25,16 @@ function drawShapes(painter, sourceCache, layer, coords) {
         const program = painter.useProgram('shape', programConfiguration);
         programConfiguration.setUniforms(gl, program, layer, {zoom: painter.transform.zoom});
 
-        if (layer.paint['shape-pitch-scale'] === 'map') {
-            gl.uniform1i(program.u_scale_with_map, true);
-            gl.uniform2f(program.u_extrude_scale,
-                painter.transform.pixelsToGLUnits[0] * painter.transform.altitude,
-                painter.transform.pixelsToGLUnits[1] * painter.transform.altitude);
-        } else {
-            gl.uniform1i(program.u_scale_with_map, false);
-            gl.uniform2fv(program.u_extrude_scale, painter.transform.pixelsToGLUnits);
-        }
+        gl.activeTexture(gl.TEXTURE0);
+        gl.uniform1i(program.u_texture, 0);
 
-        gl.uniform1f(program.u_devicepixelratio, browser.devicePixelRatio);
+        const mapMoving = painter.options.rotating || painter.options.zooming;
+        painter.spriteAtlas.bind(gl, mapMoving);
+        gl.uniform2f(program.u_texsize, painter.spriteAtlas.width / 4, painter.spriteAtlas.height / 4);
+
+        const s = painter.transform.altitude;
+        const extrudeScale = [ painter.transform.pixelsToGLUnits[0] * s, painter.transform.pixelsToGLUnits[1] * s];
+        gl.uniform2fv(program.u_extrude_scale, extrudeScale);
 
         gl.uniformMatrix4fv(program.u_matrix, false, painter.translatePosMatrix(
             coord.posMatrix,

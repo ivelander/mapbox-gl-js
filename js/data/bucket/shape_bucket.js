@@ -3,15 +3,28 @@
 const Bucket = require('../bucket');
 const VertexArrayType = require('../vertex_array_type');
 const ElementArrayType = require('../element_array_type');
+const Shaping = require('../../symbol/shaping');
+const Quads = require('../../symbol/quads');
 const loadGeometry = require('../load_geometry');
 const resolveTokens = require('../../util/token');
 const EXTENT = require('../extent');
+
+const shapeIcon = Shaping.shapeIcon;
+const getIconQuads = Quads.getIconQuads;
 
 const shapeInterfaces = {
     layoutVertexArrayType: new VertexArrayType([{
         name: 'a_pos',
         components: 2,
         type: 'Int16'
+    }, {
+        name: 'a_offset',
+        components: 2,
+        type: 'Int16'
+    }, {
+        name: 'a_texture_pos',
+        components: 2,
+        type: 'Uint16'
     }]),
     elementArrayType: new ElementArrayType(),
 
@@ -54,23 +67,22 @@ const shapeInterfaces = {
         },
         multiplier: 255,
         paintProperty: 'shape-opacity'
-    }, {
-        name: 'a_type',
-        components: 1,
-        type: 'Uint16',
-        isLayerConstant: false,
-        getValue: (layer, globalProperties, featureProperties) => {
-            return [layer.getPaintValue("shape-type", globalProperties, featureProperties)];
-        },
-        multiplier: 10,
-        paintProperty: 'shape-type'
     }]
 };
 
-function addShapeVertex(layoutVertexArray, x, y, extrudeX, extrudeY) {
-    layoutVertexArray.emplaceBack(
-        (x * 2) + ((extrudeX + 1) / 2),
-        (y * 2) + ((extrudeY + 1) / 2));
+function addVertex(array, x, y, ox, oy, tx, ty) {
+    array.emplaceBack(
+			// a_pos
+			x,
+			y,
+
+			// a_offset
+			Math.round(ox * 64),
+			Math.round(oy * 64),
+
+			// a_texture_pos
+			tx / 4,
+			ty / 4);
 }
 
 /**
@@ -83,57 +95,114 @@ function addShapeVertex(layoutVertexArray, x, y, extrudeX, extrudeY) {
 class ShapeBucket extends Bucket {
     constructor(options) {
         super(options, shapeInterfaces);
+        this.layers = options.layers;
         this.layer = this.layers[0];
+        this.zoom = options.zoom;
     }
 
     populate(features, options) {
-        this.icons = Object.keys(options.iconDependencies);
-        super.populate(features, options);
-    }
-
-    addFeature(feature) {
-        const arrays = this.arrays;
         const iconImageField = this.layer.layout['shape-image'];
 
-        let icon;
-        if (iconImageField) {
-            icon = resolveTokens(feature.properties, iconImageField);
-            console.log(icon);
-        }
+        this.features = [];
+        const icons = options.iconDependencies;
 
-        for (const ring of loadGeometry(feature)) {
+        for (const feature of features) {
+            if (!this.layers[0].filter(feature)) {
+                continue;
+            }
+            let icon;
+            if (iconImageField) {
+                icon = resolveTokens(feature.properties, iconImageField);
+            }
+
+            this.features.push({
+                undefined,
+                icon,
+                geometry: loadGeometry(feature),
+                properties: feature.properties
+            });
+
+            options.featureIndex.insert(feature, this.index);
+
+            if (icon) {
+                icons[icon] = true;
+            }
+        }
+    }
+
+    prepare(stacks, icons) {
+
+        //const zoomHistory = { lastIntegerZoom: Infinity, lastIntegerZoomTime: 0, lastZoom: 0 };
+        //this.adjustedIconMaxSize = this.layers[0].getLayoutValue('icon-size', {zoom: 18, zoomHistory: zoomHistory});
+        //this.adjustedIconSize = this.layers[0].getLayoutValue('icon-size', {zoom: this.zoom + 1, zoomHistory: zoomHistory});
+
+        const tileSize = 512 * this.overscaling;
+        this.tilePixelRatio = EXTENT / tileSize;
+        this.compareText = {};
+        this.iconsNeedLinear = false;
+
+        const layout = this.layers[0].layout;
+        layout['icon-offset'] = [0, 0];
+
+        for (const feature of this.features) {
+
+            let shapedIcon;
+            if (feature.icon) {
+                const image = icons[feature.icon];
+                shapedIcon = shapeIcon(image, layout);
+
+                if (image) {
+                    if (image.pixelRatio !== 1) {
+                        this.iconsNeedLinear = true;
+                    } else if (layout['icon-rotate'] !== 0 || !this.layers[0].isLayoutValueFeatureConstant('icon-rotate')) {
+                        this.iconsNeedLinear = true;
+                    }
+                }
+            }
+
+            if (shapedIcon) {
+                this.addFeature(feature, shapedIcon);
+            }
+        }
+    }
+
+    place(collisionTile, showCollisionBoxes) {
+    }
+
+    addFeature(feature, shapedIcon) {
+        const arrays = this.arrays;
+
+        for (const ring of feature.geometry) {
             for (const point of ring) {
+                // Do not include points that are outside the tile boundaries.
+                if (!point) return;
+                if (point.x < 0 || point.x >= EXTENT || point.y < 0 || point.y >= EXTENT) return;
                 const x = point.x;
                 const y = point.y;
 
-                // Do not include points that are outside the tile boundaries.
-                if (x < 0 || x >= EXTENT || y < 0 || y >= EXTENT) continue;
-
-                // this geometry will be of the Point type, and we'll derive
-                // two triangles from it.
-                //
-                // ┌─────────┐
-                // │ 3     2 │
-                // │         │
-                // │ 0     1 │
-                // └─────────┘
+                const iconQuads = getIconQuads(point, shapedIcon, undefined, undefined, this.layer, false, undefined, {zoom: this.zoom}, feature.properties);
+                const tl = iconQuads[0].tl,
+                    tr = iconQuads[0].tr,
+                    bl = iconQuads[0].bl,
+                    br = iconQuads[0].br,
+                    tex = iconQuads[0].tex;
 
                 const segment = arrays.prepareSegment(4);
                 const index = segment.vertexLength;
 
-                addShapeVertex(arrays.layoutVertexArray, x, y, -1, -1);
-                addShapeVertex(arrays.layoutVertexArray, x, y, 1, -1);
-                addShapeVertex(arrays.layoutVertexArray, x, y, 1, 1);
-                addShapeVertex(arrays.layoutVertexArray, x, y, -1, 1);
+                addVertex(arrays.layoutVertexArray, x, y, tl.x, tl.y, tex.x, tex.y);
+                addVertex(arrays.layoutVertexArray, x, y, tr.x, tr.y, tex.x + tex.w, tex.y);
+                addVertex(arrays.layoutVertexArray, x, y, bl.x, bl.y, tex.x, tex.y + tex.h);
+                addVertex(arrays.layoutVertexArray, x, y, br.x, br.y, tex.x + tex.w, tex.y + tex.h);
 
                 arrays.elementArray.emplaceBack(index, index + 1, index + 2);
-                arrays.elementArray.emplaceBack(index, index + 3, index + 2);
+                arrays.elementArray.emplaceBack(index + 1, index + 2, index + 3);
 
                 segment.vertexLength += 4;
                 segment.primitiveLength += 2;
+
             }
         }
-
         arrays.populatePaintArrays(feature.properties);
     }
 }

@@ -129,7 +129,7 @@ class WorkerTile {
         for (let i = layerIndex.order.length - 1; i >= 0; i--) {
             const id = layerIndex.order[i];
             const bucket = buckets[id];
-            if (bucket && bucket.layers[0].type === 'symbol') {
+            if (bucket && (bucket.layers[0].type === 'symbol' || bucket.layers[0].type === 'shape')) {
                 this.symbolBuckets.push(bucket);
             }
         }
