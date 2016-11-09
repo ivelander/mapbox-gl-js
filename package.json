@@ -1,12 +1,12 @@
 {
-  "name": "mapbox-gl",
-  "description": "A WebGL interactive maps library",
-  "version": "0.26.0",
+  "name": "@ivelander/mapbox-gl",
+  "description": "A WebGL interactive maps library - ivelander fork",
+  "version": "0.1.0",
   "main": "js/mapbox-gl.js",
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",
-    "url": "git://github.com/mapbox/mapbox-gl-js.git"
+    "url": "git://github.com/ivelander/mapbox-gl-js.git"
   },
   "engines": {
     "node": ">=4.0.0"
