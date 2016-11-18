@@ -38,15 +38,15 @@ const shapeInterfaces = {
         multiplier: 255,
         paintProperty: 'shape-color'
     }, {
-        name: 'a_radius',
+        name: 'a_scale',
         components: 1,
         type: 'Uint16',
         isLayerConstant: false,
         getValue: (layer, globalProperties, featureProperties) => {
-            return [layer.getPaintValue("shape-radius", globalProperties, featureProperties)];
+            return [layer.getPaintValue("shape-scale", globalProperties, featureProperties)];
         },
         multiplier: 10,
-        paintProperty: 'shape-radius'
+        paintProperty: 'shape-scale'
     }, {
         name: 'a_blur',
         components: 1,
