@@ -187,19 +187,49 @@ class ShapeBucket extends Bucket {
                     br = iconQuads[0].br,
                     tex = iconQuads[0].tex;
 
-                const segment = arrays.prepareSegment(4);
-                const index = segment.vertexLength;
+                let segment;
+                let index;
 
-                addVertex(arrays.layoutVertexArray, x, y, tl.x, tl.y, tex.x, tex.y);
-                addVertex(arrays.layoutVertexArray, x, y, tr.x, tr.y, tex.x + tex.w, tex.y);
-                addVertex(arrays.layoutVertexArray, x, y, bl.x, bl.y, tex.x, tex.y + tex.h);
-                addVertex(arrays.layoutVertexArray, x, y, br.x, br.y, tex.x + tex.w, tex.y + tex.h);
+                // We use the segment property to allow markers to just draw half
+                // SVGs for when there is stacked data (same geo) that we want
+                // to not hide from the user
+                if (feature.properties.segment) {
+                    segment = arrays.prepareSegment(2);
+                    index = segment.vertexLength;
 
-                arrays.elementArray.emplaceBack(index, index + 1, index + 2);
-                arrays.elementArray.emplaceBack(index + 1, index + 2, index + 3);
+                    // If the marker is just segment 1 we draw the top left triangle
+                    if (feature.properties.segment === 1) {
+                        addVertex(arrays.layoutVertexArray, x, y, tl.x, tl.y, tex.x, tex.y);
+                    }
+                    addVertex(arrays.layoutVertexArray, x, y, tr.x, tr.y, tex.x + tex.w, tex.y);
+                    addVertex(arrays.layoutVertexArray, x, y, bl.x, bl.y, tex.x, tex.y + tex.h);
 
-                segment.vertexLength += 4;
-                segment.primitiveLength += 2;
+										// If the marker is just segment 2 we draw the bottom right triangle
+                    if (feature.properties.segment === 2) {
+                        addVertex(arrays.layoutVertexArray, x, y, br.x, br.y, tex.x + tex.w, tex.y + tex.h);
+                    }
+
+                    arrays.elementArray.emplaceBack(index, index + 1, index + 2);
+
+                    segment.vertexLength += 3;
+                    segment.primitiveLength += 1;
+                } else {
+                    // non-segmented markers draw both top left and bottom right
+                    // triangles
+                    segment = arrays.prepareSegment(4);
+                    index = segment.vertexLength;
+
+                    addVertex(arrays.layoutVertexArray, x, y, tl.x, tl.y, tex.x, tex.y);
+                    addVertex(arrays.layoutVertexArray, x, y, tr.x, tr.y, tex.x + tex.w, tex.y);
+                    addVertex(arrays.layoutVertexArray, x, y, bl.x, bl.y, tex.x, tex.y + tex.h);
+                    addVertex(arrays.layoutVertexArray, x, y, br.x, br.y, tex.x + tex.w, tex.y + tex.h);
+
+                    arrays.elementArray.emplaceBack(index, index + 1, index + 2);
+                    arrays.elementArray.emplaceBack(index + 1, index + 2, index + 3);
+
+                    segment.vertexLength += 4;
+                    segment.primitiveLength += 2;
+                }
 
             }
         }
