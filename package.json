@@ -1,7 +1,7 @@
 {
   "name": "@ivelander/mapbox-gl",
   "description": "A WebGL interactive maps library - ivelander fork",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "main": "js/mapbox-gl.js",
   "license": "BSD-3-Clause",
   "repository": {
@@ -21,7 +21,7 @@
     "gl-matrix": "^2.3.1",
     "grid-index": "^1.0.0",
     "mapbox-gl-function": "mapbox/mapbox-gl-function#41c6724e2bbd7bd1eb5991451bbf118b7d02b525",
-    "mapbox-gl-shaders": "ivelander/mapbox-gl-shaders#a6a6cdadb148058fcfb00498a85cf3cbaf2c1f38",
+    "mapbox-gl-shaders": "ivelander/mapbox-gl-shaders#d4cb68a5d28a1e967387e91dc38b4d145eca2c84",
     "mapbox-gl-style-spec": "ivelander/mapbox-gl-style-spec#3ca364dd6304bdcf8c216c6de7daef8914462f61",
     "mapbox-gl-supported": "^1.2.0",
     "package-json-versionify": "^1.0.2",
